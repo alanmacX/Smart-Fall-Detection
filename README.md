@@ -5,7 +5,7 @@ This project implements an intelligent fall detection system combining YOLOv8 fo
 
 ---
 
-## 🔧 Features
+##  Features
 
 - **Fall detection** using custom-trained YOLOv8
 - **Pose overlay** with YOLOv8-Pose (non-intrusive, only for visualization)
@@ -20,7 +20,7 @@ This project implements an intelligent fall detection system combining YOLOv8 fo
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 fall-detection/
@@ -34,7 +34,7 @@ fall-detection/
 
 ---
 
-## 💻 Installation
+##  Installation
 
 ### 1. Clone the repo:
 
@@ -51,7 +51,7 @@ pip install -r requirements.txt
 
 ---
 
-## 📦 Download Required Models (Manual)
+##  Download Required Models (Manual)
 
 | File               | Purpose                 | Link |
 |--------------------|--------------------------|------|
@@ -59,7 +59,7 @@ pip install -r requirements.txt
 | `yolov8x-pose.pt`  | Pose estimation model    | [YOLOv8 Releases](https://github.com/ultralytics/ultralytics/releases) |
 | `tinyllama.gguf`   | Local LLM weights        | [TinyLLaMA on HuggingFace](https://huggingface.co/cmp-nct/tiny-llama-1.1B-gguf) |
 
-🗂�? Place them in the `models/` directory:
+ Place them in the `models/` directory:
 
 ```
 fall-detection/
@@ -71,7 +71,7 @@ fall-detection/
 
 ---
 
-## 🚀 Usage
+##  Usage
 
 ### Start the GUI:
 
@@ -81,14 +81,14 @@ python gui.py
 
 Then in the GUI:
 
-1. Click “Import Video�?
-2. Click “Start Detection�?
+1. Click “Import Video�?
+2. Click “Start Detection�?
 3. See detection + pose + fall feedback
 4. Pop-up windows give real-time care suggestions based on LLM interpretation
 
 ---
 
-## �?? LLM Setup (TinyLLaMA)
+##  LLM Setup (TinyLLaMA)
 
 1. Install llama-cpp-python:
 
@@ -108,7 +108,7 @@ Give a one-sentence first-aid suggestion.
 
 ---
 
-## 🧪 Example Screenshot
+##  Example Screenshot
 
 > You can insert your own demo frame here.
 
@@ -118,7 +118,7 @@ Give a one-sentence first-aid suggestion.
 
 ---
 
-## ⚙️ Notes
+## ️ Notes
 
 - All model files (`.pt`, `.gguf`, `.mp4`) are ignored in `.gitignore`
 - This system is designed to run fully offline
@@ -126,14 +126,14 @@ Give a one-sentence first-aid suggestion.
 
 ---
 
-## 📜 License
+##  License
 
 MIT License. Free for academic and personal use.
 
 
 ---
 
-## 🏋�? Model Training
+##  Model Training
 
 To train your own fall detection model using YOLOv8, follow these steps:
 
@@ -144,11 +144,11 @@ Organize your data in YOLO format:
 ```
 fall-dataset/
 ├── images/
-�?   ├── train/
-�?   └── val/
+   ├── train/
+   └── val/
 ├── labels/
-�?   ├── train/
-�?   └── val/
+   ├── train/
+   └── val/
 └── data.yaml
 ```
 
