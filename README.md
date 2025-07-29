@@ -81,8 +81,8 @@ python gui.py
 
 Then in the GUI:
 
-1. Click “Import Video?
-2. Click “Start Detection?
+1. Click “Import Video"
+2. Click “Start Detection"
 3. See detection + pose + fall feedback
 4. Pop-up windows give real-time care suggestions based on LLM interpretation
 
