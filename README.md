@@ -57,7 +57,7 @@ pip install -r requirements.txt
 |--------------------|--------------------------|------|
 | `best.pt`          | Trained fall detector    | *(Upload your link here)* |
 | `yolov8x-pose.pt`  | Pose estimation model    | [YOLOv8 Releases](https://github.com/ultralytics/ultralytics/releases) |
-| `tinyllama.gguf`   | Local LLM weights        | [TinyLLaMA on HuggingFace](https://huggingface.co/cmp-nct/tiny-llama-1.1B-gguf) |
+| `tinyllama.gguf`   | Local LLM weights        | [TinyLLaMA on HuggingFace](https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0) |
 
  Place them in the `models/` directory:
 
@@ -81,8 +81,8 @@ python gui.py
 
 Then in the GUI:
 
-1. Click “Import Video�?
-2. Click “Start Detection�?
+1. Click “Import Video?
+2. Click “Start Detection?
 3. See detection + pose + fall feedback
 4. Pop-up windows give real-time care suggestions based on LLM interpretation
 
