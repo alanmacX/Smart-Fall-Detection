@@ -39,8 +39,8 @@ fall-detection/
 ### 1. Clone the repo:
 
 ```bash
-git clone https://github.com/your-username/fall-detection.git
-cd fall-detection
+git clone https://github.com/alanmacX/Smart-Fall-Detection-Demo.git
+cd Smart-Fall-Detection-Demo
 ```
 
 ### 2. Install dependencies:
