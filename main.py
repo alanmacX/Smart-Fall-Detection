@@ -110,7 +110,7 @@ def detect_fall_smart(
         if not ret:
             break
 
-        fall_results = fall_model.predict(source=frame, conf=0.25, iou=0.4)[0]
+        fall_results = fall_model.predict(source=frame, conf=0.50, iou=0.4)[0]
         current_fall_centers = []
         current_fall_count = 0
         sudden_fall_flag = False
@@ -133,9 +133,18 @@ def detect_fall_smart(
         fall_history.append(current_fall_count > 0)
         persistent_fall = sum(fall_history) >= vote_threshold
 
+        fall_velocity_threshold = 20
+        fall_downward_threshold = 15  # 像素单位，可根据实际视频帧大小调整
+
         for i in range(min(len(current_fall_centers), len(last_centers))):
-            v = compute_velocity(current_fall_centers[i], last_centers[i])
-            if v > speed_threshold:
+            center_now = current_fall_centers[i]
+            center_prev = last_centers[i]
+
+            velocity = compute_velocity(center_now, center_prev)
+            delta_y = center_now[1] - center_prev[1]  # y 向下增加
+
+            # 只有同时满足速度大且 y 向下显著移动才算“突然摔倒”
+            if velocity > fall_velocity_threshold and delta_y > fall_downward_threshold:
                 sudden_fall_flag = True
 
         last_centers = current_fall_centers  # 更新历史位置
