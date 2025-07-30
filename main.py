@@ -13,7 +13,7 @@ last_llm_time = 0
 llm_cooldown = 10
 
 llm = Llama(
-    model_path="models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",  # 根据你的路径调整
+    model_path="models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",  
     n_ctx=512,
     verbose=False
 )
@@ -25,11 +25,10 @@ def send_to_llm_and_show(data: dict):
     def llm_thread():
         global last_popup_window
 
-
         prompt = f"""You are an elderly care expert. Based on the following fall event data, please generate a concise care suggestion or an alert message:Event Data: {json.dumps(data, ensure_ascii=False)}Please respond in English:"""
 
 
-        res = llm(prompt, max_tokens=600, stop=["</s>"])
+        res = llm(prompt, max_tokens=600, stop=["</s>"]) #adjust max_token to get detailed outputs
         text_output = res["choices"][0]["text"].strip()
 
 
@@ -43,7 +42,7 @@ def send_to_llm_and_show(data: dict):
 
             popup = tk.Toplevel()
             popup.title("LLM Analysis Result")
-            popup.geometry("500x300")  # 更大窗口
+            popup.geometry("500x300")  
             popup.resizable(True, True)
 
 
@@ -55,7 +54,7 @@ def send_to_llm_and_show(data: dict):
 
             text_widget = tk.Text(frame, wrap='word', yscrollcommand=scrollbar.set)
             text_widget.insert('1.0', text_output)
-            text_widget.config(state='disabled')  # 禁止编辑
+            text_widget.config(state='disabled') 
             text_widget.pack(fill='both', expand=True)
 
             scrollbar.config(command=text_widget.yview)
@@ -123,7 +122,7 @@ def detect_fall_smart(
                 center = compute_center((x1, y1, x2, y2))
                 current_fall_centers.append(center)
 
-                if cls_id in [0, 1]:  # fall 类别
+                if cls_id in [0, 1]:
                     current_fall_count += 1
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
                     cv2.putText(frame, f"FALL {conf:.2f}", (x1, y1 - 10),
@@ -134,20 +133,19 @@ def detect_fall_smart(
         persistent_fall = sum(fall_history) >= vote_threshold
 
         fall_velocity_threshold = 20
-        fall_downward_threshold = 15  # 像素单位，可根据实际视频帧大小调整
+        fall_downward_threshold = 15 
 
         for i in range(min(len(current_fall_centers), len(last_centers))):
             center_now = current_fall_centers[i]
             center_prev = last_centers[i]
 
             velocity = compute_velocity(center_now, center_prev)
-            delta_y = center_now[1] - center_prev[1]  # y 向下增加
+            delta_y = center_now[1] - center_prev[1]  
 
-            # 只有同时满足速度大且 y 向下显著移动才算“突然摔倒”
             if velocity > fall_velocity_threshold and delta_y > fall_downward_threshold:
                 sudden_fall_flag = True
 
-        last_centers = current_fall_centers  # 更新历史位置
+        last_centers = current_fall_centers 
 
 
         pose_results = pose_model.predict(source=frame, conf=0.25)[0]
@@ -161,11 +159,11 @@ def detect_fall_smart(
             text = "ALERT: Sustained Fall" if persistent_fall else "ALERT: Sudden Fall"
             cv2.putText(frame, text, (10, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 3)
-            # 构造结构化数据
+            
             structured_event = {
                 "frame": int(cap.get(cv2.CAP_PROP_POS_FRAMES)),
                 "fall": True,
-                "person_id": 0,  # 如果你有多目标跟踪 ID，可填写具体值
+                "person_id": 0,  
                 "velocity": v if 'v' in locals() else 0,
                 "center": current_fall_centers[0] if current_fall_centers else None,
                 "bbox": [x1, y1, x2, y2] if 'x1' in locals() else None,
