@@ -1,5 +1,5 @@
 
-# Smart Fall Detection System (YOLO + Pose + LLM + GUI)
+# Smart Fall Detection System Demo (YOLO + Pose + LLM + GUI)
 
 This project implements an intelligent fall detection system combining YOLOv8 for object detection, YOLOv8-Pose for skeleton visualization, and TinyLLaMA for local natural language feedback. It includes a lightweight GUI for user-friendly interaction.
 
