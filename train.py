@@ -3,7 +3,6 @@ from ultralytics import YOLO
 def main():
     model = YOLO('best.pt')
 
-    # 开始训练
     model.train(
         data='data.yaml',
         epochs=100,
