@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上传测试 - 智能跌倒检测系统</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .upload-form {
+            border: 2px dashed #ccc;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 上传功能测试页面</h1>
+    
+    <div class="upload-form">
+        <h3>选择视频文件</h3>
+        <input type="file" id="videoFile" accept="video/*">
+        <br><br>
+        <button id="uploadBtn" onclick="uploadVideo()" disabled>上传视频</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <h3>调试日志</h3>
+    <div id="log"></div>
+
+    <script>
+        const videoFile = document.getElementById('videoFile');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const status = document.getElementById('status');
+        const log = document.getElementById('log');
+
+        let selectedFile = null;
+
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            log.textContent += `[${timestamp}] ${message}\n`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function showStatus(message, type = 'info') {
+            status.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        videoFile.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                addLog(`选择文件: ${file.name}`);
+                addLog(`文件大小: ${file.size} bytes`);
+                addLog(`文件类型: ${file.type}`);
+                uploadBtn.disabled = false;
+                showStatus(`已选择文件: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`, 'info');
+            }
+        });
+
+        async function uploadVideo() {
+            if (!selectedFile) {
+                showStatus('请先选择文件', 'error');
+                return;
+            }
+
+            addLog('开始上传...');
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '上传中...';
+
+            try {
+                const formData = new FormData();
+                formData.append('video', selectedFile);
+
+                addLog('发送POST请求到 /upload');
+                
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                addLog(`响应状态: ${response.status} ${response.statusText}`);
+
+                const result = await response.json();
+                addLog(`响应内容: ${JSON.stringify(result, null, 2)}`);
+
+                if (response.ok) {
+                    showStatus(`上传成功! 任务ID: ${result.task_id}`, 'success');
+                    addLog(`上传成功，任务ID: ${result.task_id}`);
+                } else {
+                    showStatus(`上传失败: ${result.error}`, 'error');
+                    addLog(`上传失败: ${result.error}`);
+                }
+            } catch (error) {
+                addLog(`JavaScript错误: ${error.message}`);
+                addLog(`错误堆栈: ${error.stack}`);
+                showStatus(`上传过程中发生错误: ${error.message}`, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '上传视频';
+            }
+        }
+
+        // 页面加载时添加初始日志
+        addLog('测试页面加载完成');
+        addLog('请选择一个视频文件进行测试');
+    </script>
+</body>
+</html>

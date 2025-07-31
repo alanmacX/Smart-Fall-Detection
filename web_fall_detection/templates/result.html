@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>检测结果分析 - 智能跌倒检测系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- 导航栏 -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+            <div class="container">
+                <a class="navbar-brand" href="/">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    智能跌倒检测系统
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" href="/">
+                        <i class="fas fa-home me-1"></i>
+                        返回首页
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container">
+            <!-- 页面标题 -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h2 class="mb-0">
+                            <i class="fas fa-chart-line text-primary me-3"></i>
+                            检测结果分析
+                        </h2>
+                        <div class="btn-group">
+                            <button id="downloadVideoBtn" class="btn btn-success">
+                                <i class="fas fa-download me-2"></i>
+                                下载视频
+                            </button>
+                            <button class="btn btn-outline-primary" onclick="window.print()">
+                                <i class="fas fa-print me-2"></i>
+                                打印报告
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 关键指标卡片 -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="card metric-card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="metric-icon bg-danger">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <h3 class="metric-value text-danger">{{ result.analysis.summary.total_falls }}</h3>
+                            <p class="metric-label">跌倒事件数</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card metric-card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="metric-icon bg-warning">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <h3 class="metric-value text-warning">{{ result.analysis.summary.risk_level|upper }}</h3>
+                            <p class="metric-label">风险等级</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card metric-card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="metric-icon bg-info">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <h3 class="metric-value text-info">{{ "%.1f"|format(result.analysis.summary.video_duration/60) }}min</h3>
+                            <p class="metric-label">视频时长</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card metric-card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="metric-icon bg-success">
+                                <i class="fas fa-tachometer-alt"></i>
+                            </div>
+                            <h3 class="metric-value text-success">{{ "%.1f"|format(result.analysis.summary.processing_time) }}s</h3>
+                            <p class="metric-label">处理耗时</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- 左侧 - 图表分析 -->
+                <div class="col-lg-8">
+                    <!-- 事件时间线 -->
+                    {% if result.analysis.timeline %}
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-timeline me-2"></i>
+                                跌倒事件时间线
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="timelineChart" height="100"></canvas>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- 置信度趋势 -->
+                    {% if result.analysis.chart_data.confidence_trend %}
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-chart-line me-2"></i>
+                                检测置信度趋势
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="confidenceChart" height="100"></canvas>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- 跌倒类型分布 -->
+                    {% if result.analysis.fall_types.distribution %}
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-pie-chart me-2"></i>
+                                跌倒类型分布
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <canvas id="fallTypeChart"></canvas>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mt-3">
+                                        <h6>类型说明:</h6>
+                                        <div class="mb-2">
+                                            <span class="badge bg-danger me-2">突发性跌倒</span>
+                                            {{ result.analysis.fall_types.sudden }} 次
+                                        </div>
+                                        <div class="mb-2">
+                                            <span class="badge bg-warning me-2">持续性跌倒</span>
+                                            {{ result.analysis.fall_types.sustained }} 次
+                                        </div>
+                                        <hr>
+                                        <small class="text-muted">
+                                            突发性跌倒通常表示意外摔倒，持续性跌倒可能表示起身困难。
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 右侧 - 智能分析与建议 -->
+                <div class="col-lg-4">
+                    <!-- LLM智能分析 -->
+                    {% if result.llm_analysis %}
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-robot me-2"></i>
+                                AI智能分析
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="ai-analysis">
+                                <pre class="ai-text">{{ result.llm_analysis }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- 关怀建议 -->
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-heart me-2"></i>
+                                关怀建议
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% for recommendation in result.analysis.recommendations %}
+                            <div class="recommendation-item">
+                                <p class="mb-2">{{ recommendation }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- 事件详情 -->
+                    {% if result.analysis.timeline %}
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-list me-2"></i>
+                                事件详情
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline-events">
+                                {% for event in result.analysis.timeline %}
+                                <div class="event-item mb-3 p-3 border rounded">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ event.description }}</h6>
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock me-1"></i>
+                                                {{ event.time }}
+                                            </small>
+                                        </div>
+                                        <span class="badge bg-{% if event.type == 'sudden' %}danger{% else %}warning{% endif %}">
+                                            {{ "%.0f"|format(event.confidence * 100) }}%
+                                        </span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 置信度分析 -->
+            {% if result.analysis.confidence_analysis.distribution %}
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                置信度分布分析
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <canvas id="confidenceDistributionChart"></canvas>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="confidence-stats">
+                                        <h6>统计信息</h6>
+                                        <div class="stat-item">
+                                            <span class="label">平均置信度:</span>
+                                            <span class="value">{{ "%.1f"|format(result.analysis.confidence_analysis.average * 100) }}%</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="label">最高置信度:</span>
+                                            <span class="value">{{ "%.1f"|format(result.analysis.confidence_analysis.max * 100) }}%</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="label">最低置信度:</span>
+                                            <span class="value">{{ "%.1f"|format(result.analysis.confidence_analysis.min * 100) }}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局变量
+        const taskId = "{{ task_id }}";
+        const chartData = {{ result.analysis.chart_data | tojson }};
+        const analysisData = {{ result.analysis | tojson }};
+
+        // 下载按钮事件
+        document.getElementById('downloadVideoBtn').addEventListener('click', function() {
+            window.location.href = `/download/${taskId}`;
+        });
+
+        // 初始化图表
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+        });
+
+        function initializeCharts() {
+            // 时间线图表
+            if (chartData.timeline && chartData.timeline.length > 0) {
+                const timelineCtx = document.getElementById('timelineChart');
+                if (timelineCtx) {
+                    new Chart(timelineCtx, {
+                        type: 'line',
+                        data: {
+                            labels: chartData.timeline.map(item => `${Math.floor(item.timestamp/60)}:${Math.floor(item.timestamp%60).toString().padStart(2,'0')}`),
+                            datasets: [{
+                                label: '跌倒事件',
+                                data: chartData.timeline.map(item => item.confidence),
+                                borderColor: 'rgb(255, 99, 132)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: '跌倒事件时间分布'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 1,
+                                    title: {
+                                        display: true,
+                                        text: '置信度'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: '时间 (mm:ss)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // 置信度趋势图
+            if (chartData.confidence_trend && chartData.confidence_trend.length > 0) {
+                const confidenceCtx = document.getElementById('confidenceChart');
+                if (confidenceCtx) {
+                    new Chart(confidenceCtx, {
+                        type: 'line',
+                        data: {
+                            labels: chartData.confidence_trend.map((_, index) => `事件${index + 1}`),
+                            datasets: [{
+                                label: '检测置信度',
+                                data: chartData.confidence_trend.map(item => item.y),
+                                borderColor: 'rgb(54, 162, 235)',
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: '检测置信度变化趋势'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 1,
+                                    title: {
+                                        display: true,
+                                        text: '置信度'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // 跌倒类型饼图
+            if (analysisData.fall_types && Object.keys(analysisData.fall_types.distribution).length > 0) {
+                const fallTypeCtx = document.getElementById('fallTypeChart');
+                if (fallTypeCtx) {
+                    const distribution = analysisData.fall_types.distribution;
+                    new Chart(fallTypeCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: Object.keys(distribution).map(key => key === 'sudden' ? '突发性' : '持续性'),
+                            datasets: [{
+                                data: Object.values(distribution),
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.8)',
+                                    'rgba(255, 205, 86, 0.8)'
+                                ],
+                                borderColor: [
+                                    'rgb(255, 99, 132)',
+                                    'rgb(255, 205, 86)'
+                                ],
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // 置信度分布图
+            if (analysisData.confidence_analysis && analysisData.confidence_analysis.distribution.length > 0) {
+                const confDistCtx = document.getElementById('confidenceDistributionChart');
+                if (confDistCtx) {
+                    new Chart(confDistCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: analysisData.confidence_analysis.distribution.map(item => item.range),
+                            datasets: [{
+                                label: '事件数量',
+                                data: analysisData.confidence_analysis.distribution.map(item => item.count),
+                                backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                                borderColor: 'rgb(75, 192, 192)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: '置信度区间分布'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: '事件数量'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: '置信度区间'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>

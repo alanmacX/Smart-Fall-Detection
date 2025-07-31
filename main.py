@@ -9,6 +9,7 @@ import threading
 import tkinter as tk
 import time
 
+
 last_llm_time = 0
 llm_cooldown = 10
 
@@ -125,8 +126,8 @@ def detect_fall_smart(
                 if cls_id in [0, 1]:
                     current_fall_count += 1
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                    cv2.putText(frame, f"FALL {conf:.2f}", (x1, y1 - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                    # cv2.putText(frame, f"FALL {conf:.2f}", (x1, y1 - 10),
+                    #             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
 
         fall_history.append(current_fall_count > 0)
