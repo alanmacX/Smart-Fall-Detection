@@ -226,8 +226,112 @@ def download_result(task_id):
     if not output_path or not os.path.exists(output_path):
         return jsonify({'error': '输出视频文件不存在'}), 404
     
-    return send_file(output_path, as_attachment=True, 
-                    download_name=f"detection_result_{task['filename']}")
+    try:
+        return send_file(
+            output_path, 
+            as_attachment=False,  # 改为False以支持在线预览
+            download_name=f"detection_result_{task['filename']}",
+            mimetype='video/mp4'  # 明确指定MIME类型
+        )
+    except Exception as e:
+        print(f"发送文件失败: {str(e)}")
+        return jsonify({'error': f'文件发送失败: {str(e)}'}), 500
+
+@app.route('/preview/<task_id>')
+def preview_result(task_id):
+    """预览处理后的视频（用于在线播放）"""
+    if task_id not in tasks:
+        return jsonify({'error': '任务不存在'}), 404
+    
+    task = tasks[task_id]
+    if task['status'] != TaskStatus.COMPLETED or not task['result']:
+        return jsonify({'error': '结果文件不存在'}), 404
+    
+    output_path = task['result'].get('output_video_path')
+    if not output_path or not os.path.exists(output_path):
+        return jsonify({'error': '输出视频文件不存在'}), 404
+    
+    try:
+        # 创建响应，添加必要的headers支持视频流
+        response = send_file(
+            output_path, 
+            as_attachment=False,
+            mimetype='video/mp4',
+            conditional=True  # 支持范围请求，对视频播放很重要
+        )
+        
+        # 添加CORS头和缓存控制
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Accept-Ranges'] = 'bytes'
+        response.headers['Cache-Control'] = 'no-cache'
+        
+        return response
+    except Exception as e:
+        print(f"预览文件失败: {str(e)}")
+        return jsonify({'error': f'文件预览失败: {str(e)}'}), 500
+
+@app.route('/video/<task_id>')
+def serve_video(task_id):
+    """直接服务视频文件（静态文件方式）"""
+    if task_id not in tasks:
+        return jsonify({'error': '任务不存在'}), 404
+    
+    task = tasks[task_id]
+    if task['status'] != TaskStatus.COMPLETED or not task['result']:
+        return jsonify({'error': '结果文件不存在'}), 404
+    
+    output_path = task['result'].get('output_video_path')
+    if not output_path or not os.path.exists(output_path):
+        return jsonify({'error': '输出视频文件不存在'}), 404
+    
+    # 使用静态文件方式服务
+    try:
+        from flask import Response
+        
+        def generate():
+            with open(output_path, 'rb') as f:
+                data = f.read(1024)
+                while data:
+                    yield data
+                    data = f.read(1024)
+        
+        response = Response(generate(), mimetype='video/mp4')
+        response.headers.add('Accept-Ranges', 'bytes')
+        response.headers.add('Cache-Control', 'no-cache')
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        
+        return response
+        
+    except Exception as e:
+        print(f"服务视频文件失败: {str(e)}")
+        return jsonify({'error': f'文件服务失败: {str(e)}'}), 500
+
+@app.route('/debug/task/<task_id>')
+def debug_task(task_id):
+    """调试任务状态（开发用）"""
+    if task_id not in tasks:
+        return jsonify({'error': '任务不存在'}), 404
+    
+    task = tasks[task_id]
+    
+    # 检查输出文件
+    output_path = task.get('result', {}).get('output_video_path')
+    file_info = {}
+    if output_path:
+        file_info = {
+            'path': output_path,
+            'exists': os.path.exists(output_path),
+            'size': os.path.getsize(output_path) if os.path.exists(output_path) else 0,
+            'absolute_path': os.path.abspath(output_path)
+        }
+    
+    return jsonify({
+        'task_id': task_id,
+        'task': task,
+        'file_info': file_info,
+        'output_folder': OUTPUT_FOLDER,
+        'upload_folder': UPLOAD_FOLDER
+    })
 
 @app.route('/api/tasks')
 def list_tasks():
@@ -296,6 +400,11 @@ def run_detection_task(task_id, confidence=0.5, iou_threshold=0.4):
     try:
         task = tasks[task_id]
         print(f"🔄 开始处理任务 {task_id}")
+        print(f"📁 输入文件: {task['filepath']}")
+        
+        # 确保输出目录存在
+        os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+        print(f"📁 输出目录: {OUTPUT_FOLDER}")
         
         # 初始化检测器
         if DEMO_MODE:
@@ -333,6 +442,16 @@ def run_detection_task(task_id, confidence=0.5, iou_threshold=0.4):
         
         print(f"✅ 检测完成，开始分析结果...")
         
+        # 检查输出文件是否生成
+        if not os.path.exists(output_path):
+            raise Exception(f"输出视频文件未生成: {output_path}")
+        
+        file_size = os.path.getsize(output_path)
+        print(f"📹 输出视频文件大小: {file_size} bytes")
+        
+        if file_size == 0:
+            raise Exception("输出视频文件为空")
+        
         # 分析结果
         if DEMO_MODE:
             from utils.demo import DemoAnalyzer
@@ -355,11 +474,13 @@ def run_detection_task(task_id, confidence=0.5, iou_threshold=0.4):
                 'total_frames': result.get('total_frames', 0),
                 'fall_events': len(result.get('fall_events', [])),
                 'max_confidence': max([e.get('confidence', 0) for e in result.get('fall_events', [])], default=0),
-                'processing_time': result.get('processing_time', 0)
+                'processing_time': result.get('processing_time', 0),
+                'output_file_size': file_size
             }
         }
         
         print(f"🎉 任务 {task_id} 完成成功")
+        print(f"📊 检测结果: {len(result.get('fall_events', []))} 个跌倒事件")
         
     except Exception as e:
         # 错误处理

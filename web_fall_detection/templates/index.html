@@ -51,20 +51,26 @@
             <div class="row">
                 <!-- 左侧 - 视频上传 -->
                 <div class="col-lg-6 mb-4">
-                    <!-- 性能配置面板 -->
+                    <!-- 统一的检测配置面板 -->
                     <div class="card shadow-sm mb-3">
                         <div class="card-header bg-info text-white">
                             <h6 class="card-title mb-0">
-                                <i class="fas fa-tachometer-alt me-2"></i>
-                                性能配置
-                                <button class="btn btn-sm btn-outline-light float-end" type="button" data-bs-toggle="collapse" data-bs-target="#performanceConfig">
+                                <i class="fas fa-cogs me-2"></i>
+                                检测配置
+                                <button class="btn btn-sm btn-outline-light float-end" type="button" data-bs-toggle="collapse" data-bs-target="#detectionConfig">
                                     <i class="fas fa-cog"></i>
                                 </button>
                             </h6>
                         </div>
-                        <div class="collapse" id="performanceConfig">
+                        <div class="collapse" id="detectionConfig">
                             <div class="card-body">
                                 <div class="row g-3">
+                                    <!-- 性能配置 -->
+                                    <div class="col-12">
+                                        <h6 class="text-muted mb-3">
+                                            <i class="fas fa-tachometer-alt me-2"></i>性能优化
+                                        </h6>
+                                    </div>
                                     <div class="col-md-6">
                                         <label class="form-label">跳帧间隔</label>
                                         <select class="form-select form-select-sm" id="skipFrames">
@@ -81,6 +87,13 @@
                                             <label class="form-check-label" for="useGpu">启用GPU加速</label>
                                         </div>
                                     </div>
+                                    
+                                    <!-- 检测参数 -->
+                                    <div class="col-12 mt-4">
+                                        <h6 class="text-muted mb-3">
+                                            <i class="fas fa-crosshairs me-2"></i>检测参数
+                                        </h6>
+                                    </div>
                                     <div class="col-md-6">
                                         <label class="form-label">检测置信度</label>
                                         <input type="range" class="form-range" id="detectionConf" min="0.1" max="1" step="0.1" value="0.5">
@@ -91,7 +104,9 @@
                                         <input type="range" class="form-range" id="iouThreshold" min="0.1" max="1" step="0.1" value="0.4">
                                         <small class="text-muted">当前: <span id="iouValue">0.4</span></small>
                                     </div>
-                                    <div class="col-12">
+                                    
+                                    <!-- 应用按钮 -->
+                                    <div class="col-12 mt-3">
                                         <button class="btn btn-sm btn-success" onclick="updatePerformanceConfig()">
                                             <i class="fas fa-save me-1"></i>应用配置
                                         </button>
@@ -101,8 +116,8 @@
                                         <div class="performance-info p-2 bg-light rounded">
                                             <small class="text-muted">
                                                 <i class="fas fa-info-circle me-1"></i>
-                                                <strong>性能提示：</strong>
-                                                跳帧设置越高处理越快，但可能降低检测精度。GPU加速需要CUDA支持。
+                                                <strong>配置提示：</strong>
+                                                跳帧设置越高处理越快，但可能降低检测精度。置信度影响检测敏感性。GPU加速需要CUDA支持。
                                             </small>
                                         </div>
                                     </div>
@@ -133,28 +148,12 @@
                             <!-- 视频预览 -->
                             <div id="videoPreview" style="display: none;">
                                 <video id="previewVideo" controls class="w-100 mb-3" style="max-height: 300px;"></video>
-                                <div class="video-info">
+                                <div class="video-info mb-3">
                                     <span id="videoFileName" class="badge bg-secondary"></span>
                                     <span id="videoSize" class="badge bg-info ms-2"></span>
-                                </div>
-                            </div>
-
-                            <!-- 检测参数 -->
-                            <div class="detection-params mt-3" id="detectionParams" style="display: none;">
-                                <h6 class="mb-3">检测参数配置</h6>
-                                <div class="row">
-                                    <div class="col-6">
-                                        <label for="confidenceSlider" class="form-label">置信度阈值</label>
-                                        <input type="range" class="form-range" id="confidenceSlider" 
-                                               min="0.1" max="0.9" step="0.1" value="0.5">
-                                        <small class="text-muted">当前值: <span id="confidenceValue">0.5</span></small>
-                                    </div>
-                                    <div class="col-6">
-                                        <label for="iouSlider" class="form-label">IOU阈值</label>
-                                        <input type="range" class="form-range" id="iouSlider" 
-                                               min="0.1" max="0.9" step="0.1" value="0.4">
-                                        <small class="text-muted">当前值: <span id="iouValue">0.4</span></small>
-                                    </div>
+                                    <button class="btn btn-sm btn-outline-secondary ms-2" onclick="app.resetVideoPreview()">
+                                        <i class="fas fa-undo me-1"></i>重新选择
+                                    </button>
                                 </div>
                             </div>
 
@@ -208,8 +207,8 @@
 
                             <!-- 快速结果预览 -->
                             <div id="quickResults" style="display: none;">
-                                <h6 class="mb-3">快速结果</h6>
-                                <div class="row text-center">
+                                <h6 class="mb-3">检测结果</h6>
+                                <div class="row text-center mb-3">
                                     <div class="col-4">
                                         <div class="quick-stat">
                                             <div class="stat-number" id="fallCount">0</div>
@@ -229,9 +228,29 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- 处理后的视频预览 - 已禁用，避免兼容性问题 -->
+                                <!-- 
+                                <div id="resultVideoContainer" style="display: none;">
+                                    <h6 class="mb-2">
+                                        <i class="fas fa-play-circle me-2"></i>处理结果视频
+                                    </h6>
+                                    <div class="video-container position-relative">
+                                        <video id="resultVideo" controls class="w-100 mb-3" style="max-height: 250px; border-radius: 8px; display: none;">
+                                            您的浏览器不支持视频播放。
+                                        </video>
+                                    </div>
+                                    <div class="text-center mb-3">
+                                        <small class="text-muted">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            红色框标识跌倒检测，绿色框为正常人员检测
+                                        </small>
+                                    </div>
+                                </div>
+                                -->
                                 
                                 <!-- 操作按钮 -->
-                                <div class="d-grid gap-2 mt-4">
+                                <div class="d-grid gap-2">
                                     <button id="viewDetailsBtn" class="btn btn-outline-primary" disabled>
                                         <i class="fas fa-chart-bar me-2"></i>
                                         查看详细分析

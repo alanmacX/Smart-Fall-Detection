@@ -501,34 +501,114 @@ class FallDetector:
             max_events = 10
             limited_events = fall_events[:max_events] if len(fall_events) > max_events else fall_events
             
-            # 构建精简的分析数据
+            # 构建详细的分析数据
             analysis_data = {
                 "total_falls": len(fall_events),
                 "sample_events": len(limited_events),
                 "fall_types": list(set([event.get('type', 'unknown') for event in limited_events])),
-                "max_confidence": max([event.get('confidence', 0) for event in limited_events], default=0),
-                "time_range": {
-                    "first": min([event.get('timestamp', 0) for event in limited_events], default=0),
-                    "last": max([event.get('timestamp', 0) for event in limited_events], default=0)
+                "confidence_stats": {
+                    "max": max([event.get('confidence', 0) for event in limited_events], default=0),
+                    "min": min([event.get('confidence', 0) for event in limited_events], default=0),
+                    "avg": sum([event.get('confidence', 0) for event in limited_events]) / len(limited_events) if limited_events else 0
+                },
+                "time_distribution": {
+                    "first_event": min([event.get('timestamp', 0) for event in limited_events], default=0),
+                    "last_event": max([event.get('timestamp', 0) for event in limited_events], default=0),
+                    "time_span": max([event.get('timestamp', 0) for event in limited_events], default=0) - min([event.get('timestamp', 0) for event in limited_events], default=0)
                 }
             }
             
-            # 构建简化的提示词
-            prompt = f"""根据跌倒检测数据提供护理建议：
-检测到{analysis_data['total_falls']}次跌倒，类型：{','.join(analysis_data['fall_types'])}，最高置信度：{analysis_data['max_confidence']:.2f}
+            # 构建更详细的提示词
+            prompt = f"""你是一名专业的老年护理顾问。根据以下跌倒检测数据，提供专业的护理建议：
 
-请简短回答：
-1.风险等级(低/中/高)
-2.护理建议
-3.建议措施"""
+检测结果摘要：
+- 总跌倒次数：{analysis_data['total_falls']}次
+- 跌倒类型：{', '.join(analysis_data['fall_types'])}
+- 检测置信度：最高{analysis_data['confidence_stats']['max']:.2f}，最低{analysis_data['confidence_stats']['min']:.2f}，平均{analysis_data['confidence_stats']['avg']:.2f}
+- 时间跨度：{analysis_data['time_distribution']['time_span']:.1f}秒
+
+请从以下几个方面提供专业建议：
+
+1. 风险评估：基于跌倒次数和类型评估风险等级（低/中/高）
+2. 即时措施：当前应该采取的紧急措施
+3. 预防建议：未来如何预防类似事件
+4. 环境改善：居住环境安全优化建议
+5. 医疗建议：是否需要寻求专业医疗帮助
+
+请用中文回答，语言温和关怀，建议具体可行。每个方面用简短的句子说明。"""
             
-            # 生成分析 - 减少最大token数
-            response = self.llm(prompt, max_tokens=150, stop=["</s>"])
-            return response["choices"][0]["text"].strip()
+            # 生成分析 - 增加token数以获得更详细的回答
+            response = self.llm(prompt, max_tokens=300, stop=["</s>"], temperature=0.7)
+            analysis_text = response["choices"][0]["text"].strip()
+            
+            # 如果回答太短，提供备用分析
+            if len(analysis_text) < 50:
+                return self._generate_fallback_analysis(analysis_data)
+            
+            return analysis_text
             
         except Exception as e:
             print(f"LLM分析生成失败: {str(e)}")
-            return f"智能分析暂不可用（检测到{len(fall_events)}次跌倒事件）"
+            return self._generate_fallback_analysis({
+                "total_falls": len(fall_events),
+                "fall_types": list(set([event.get('type', 'unknown') for event in fall_events]))
+            })
+    
+    def _generate_fallback_analysis(self, analysis_data):
+        """生成备用分析（当LLM不可用时）"""
+        total_falls = analysis_data.get('total_falls', 0)
+        fall_types = analysis_data.get('fall_types', [])
+        
+        if total_falls == 0:
+            return """智能分析：
+            
+风险评估：低风险 ✅
+当前状态良好，未检测到跌倒事件。
+
+预防建议：
+• 保持定期运动，增强身体平衡能力
+• 定期检查居住环境安全
+• 保持良好的照明条件
+
+环境建议：
+• 移除地面障碍物和松散地毯
+• 安装扶手和防滑垫
+• 确保通道畅通"""
+        
+        elif total_falls <= 2:
+            risk = "中等风险"
+            immediate = "建议加强监护，评估跌倒原因"
+        else:
+            risk = "高风险"
+            immediate = "建议立即寻求医疗帮助，安排专业护理"
+        
+        type_advice = ""
+        if 'sudden' in fall_types:
+            type_advice += "\n• 突发性跌倒可能与平衡或协调问题有关"
+        if 'sustained' in fall_types:
+            type_advice += "\n• 持续性跌倒可能与起身困难有关"
+        
+        return f"""智能分析：
+
+风险评估：{risk} ⚠️
+检测到{total_falls}次跌倒事件，需要关注。
+
+即时措施：
+{immediate}
+
+预防建议：
+• 加强身体锻炼，特别是平衡训练
+• 定期体检，关注可能的健康问题
+• 考虑使用辅助设备（拐杖、助行器）{type_advice}
+
+环境改善：
+• 立即检查和改善居住环境
+• 增加照明，移除障碍物
+• 考虑安装紧急呼叫设备
+
+医疗建议：
+• 建议咨询医生进行全面评估
+• 可能需要物理治疗或康复训练"""
     
     def _compute_center(self, box):
         """计算边界框中心点"""

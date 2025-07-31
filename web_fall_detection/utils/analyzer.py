@@ -240,37 +240,97 @@ class ResultAnalyzer:
         }
     
     def _generate_recommendations(self, risk_level, total_falls, fall_types):
-        """生成关怀建议"""
+        """生成智能关怀建议"""
         recommendations = []
         
+        # 基础风险评估建议
         if risk_level == 'low':
             recommendations.extend([
                 "✅ 整体风险较低，状态良好",
-                "🔍 建议保持定期观察",
-                "💡 可考虑适当增加安全措施"
+                "🔍 建议保持定期观察和预防性检查",
+                "� 可考虑适量运动以增强身体平衡能力",
+                "🏠 定期检查居住环境，消除潜在安全隐患"
             ])
         elif risk_level == 'medium':
             recommendations.extend([
-                "⚠️ 检测到中等风险，需要关注",
-                "👥 建议家属或护理人员定期检查",
-                "🏥 可考虑咨询医疗专业人员",
-                "🛡️ 建议加强居家安全措施"
+                "⚠️ 检测到中等风险，需要增加关注度",
+                "👥 建议家属或护理人员增加探访和照料频率",
+                "🏥 建议咨询医疗专业人员，进行健康评估",
+                "🛡️ 立即加强居家安全措施，安装必要的辅助设备",
+                "📱 考虑使用紧急呼叫或监护设备"
             ])
         else:  # high
             recommendations.extend([
-                "🚨 检测到高风险情况，需要立即关注",
-                "📞 建议立即联系家属或紧急联系人",
-                "🏥 强烈建议寻求医疗帮助",
-                "👨‍⚕️ 考虑安排专业护理人员",
-                "🛡️ 立即改善居住环境安全"
+                "🚨 检测到高风险情况，需要立即采取行动",
+                "📞 建议立即联系家属、护理人员或紧急联系人",
+                "🏥 强烈建议尽快寻求专业医疗帮助和评估",
+                "👨‍⚕️ 考虑安排专业护理人员或增加家属陪护",
+                "🛡️ 立即全面改善居住环境安全配置",
+                "🚑 必要时考虑紧急医疗干预"
             ])
         
-        # 基于跌倒类型的建议
+        # 基于跌倒类型的专项建议
         type_counter = Counter(fall_types)
+        
         if type_counter.get('sudden', 0) > 0:
-            recommendations.append("⚡ 检测到突发性跌倒，可能需要检查身体协调性")
+            sudden_count = type_counter['sudden']
+            recommendations.extend([
+                f"⚡ 检测到{sudden_count}次突发性跌倒，可能的原因和建议：",
+                "   • 可能与平衡协调、血压波动或药物副作用有关",
+                "   • 建议进行神经系统和心血管功能检查",
+                "   • 评估当前服用药物是否影响平衡能力",
+                "   • 增加平衡训练和协调性锻炼"
+            ])
+            
         if type_counter.get('sustained', 0) > 0:
-            recommendations.append("🕐 检测到持续性跌倒，可能需要评估起身能力")
+            sustained_count = type_counter['sustained']
+            recommendations.extend([
+                f"🕐 检测到{sustained_count}次持续性跌倒，可能的原因和建议：",
+                "   • 可能与肌力不足、关节问题或起身困难有关",
+                "   • 建议进行肌力和关节功能评估",
+                "   • 考虑使用辅助起身设备（如床边扶手、起身椅）",
+                "   • 安排物理治疗或康复训练以改善活动能力"
+            ])
+        
+        # 环境安全建议
+        recommendations.append("🏠 居住环境安全优化建议：")
+        if risk_level == 'low':
+            recommendations.extend([
+                "   • 定期检查地面是否有松散地毯或障碍物",
+                "   • 确保各房间照明充足，特别是夜间照明",
+                "   • 保持常用物品放置在容易取得的高度"
+            ])
+        else:
+            recommendations.extend([
+                "   • 立即移除所有地面障碍物和松散地毯",
+                "   • 在卫生间、楼梯和走廊安装扶手",
+                "   • 安装防滑垫，特别是浴室和厨房区域",
+                "   • 改善照明系统，安装夜灯和感应灯",
+                "   • 将日常用品放置在腰部高度，避免弯腰或踮脚"
+            ])
+        
+        # 健康监护建议
+        recommendations.append("📊 健康监护和随访建议：")
+        if total_falls <= 1:
+            recommendations.extend([
+                "   • 建议每月进行一次安全自查",
+                "   • 保持定期体检，关注平衡和协调能力",
+                "   • 记录日常活动状况，发现异常及时就医"
+            ])
+        elif total_falls <= 3:
+            recommendations.extend([
+                "   • 建议每周进行安全评估和监护",
+                "   • 安排定期医疗检查，包括视力、听力和平衡测试",
+                "   • 建立跌倒日志，记录可能的诱发因素",
+                "   • 考虑使用可穿戴设备进行日常监测"
+            ])
+        else:
+            recommendations.extend([
+                "   • 需要每日专业监护和安全评估",
+                "   • 安排紧急医疗评估和后续治疗计划",
+                "   • 建立24小时紧急联系和响应机制",
+                "   • 考虑短期住院观察或专业护理机构照料"
+            ])
         
         return recommendations
     

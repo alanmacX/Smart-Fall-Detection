@@ -471,6 +471,66 @@ body {
     to { transform: rotate(360deg); }
 }
 
+/* AI建议样式 */
+.ai-recommendations {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.ai-analysis-card .card-header,
+.recommendations-card .card-header {
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+}
+
+.ai-analysis-text {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #495057;
+}
+
+.ai-analysis-text .fw-bold {
+    font-size: 0.95rem;
+    margin-top: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-left: 3px solid var(--primary-color);
+    padding-left: 0.75rem;
+}
+
+.ai-analysis-text .ms-3 {
+    font-size: 0.85rem;
+    color: #6c757d;
+    padding-left: 1rem;
+    position: relative;
+}
+
+.ai-analysis-text .ms-3:before {
+    content: "•";
+    color: var(--primary-color);
+    position: absolute;
+    left: 0.5rem;
+}
+
+.recommendations-card ul li {
+    font-size: 0.85rem;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.recommendations-card ul li:last-child {
+    border-bottom: none;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* 打印样式 */
 @media print {
     .navbar, .btn, .card-header .btn-group {
@@ -484,5 +544,9 @@ body {
     
     body {
         background: white !important;
+    }
+    
+    .ai-recommendations {
+        break-inside: avoid;
     }
 }

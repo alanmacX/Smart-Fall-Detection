@@ -8,6 +8,8 @@ class FallDetectionApp {
         this.currentTaskId = null;
         this.progressInterval = null;
         this.isProcessing = false;
+        this.currentVideoURL = null; // 存储当前预览视频的blob URL
+        this.currentResultVideoURL = null; // 存储当前结果视频的blob URL
         
         this.initializeElements();
         this.bindEvents();
@@ -22,13 +24,6 @@ class FallDetectionApp {
         this.previewVideo = document.getElementById('previewVideo');
         this.videoFileName = document.getElementById('videoFileName');
         this.videoSize = document.getElementById('videoSize');
-        
-        // 参数控制元素
-        this.detectionParams = document.getElementById('detectionParams');
-        this.confidenceSlider = document.getElementById('confidenceSlider');
-        this.confidenceValue = document.getElementById('confidenceValue');
-        this.iouSlider = document.getElementById('iouSlider');
-        this.iouValue = document.getElementById('iouValue');
         
         // 按钮元素
         this.uploadBtn = document.getElementById('uploadBtn');
@@ -49,6 +44,10 @@ class FallDetectionApp {
         this.riskLevel = document.getElementById('riskLevel');
         this.confidence = document.getElementById('confidence');
         
+        // 结果视频元素（可能不存在）
+        this.resultVideoContainer = document.getElementById('resultVideoContainer') || null;
+        this.resultVideo = document.getElementById('resultVideo') || null;
+        
         // 历史记录
         this.taskHistory = document.getElementById('taskHistory');
         
@@ -64,10 +63,6 @@ class FallDetectionApp {
         this.uploadArea.addEventListener('dragleave', this.handleDragLeave.bind(this));
         this.uploadArea.addEventListener('drop', this.handleDrop.bind(this));
         this.fileInput.addEventListener('change', this.handleFileSelect.bind(this));
-        
-        // 滑块事件
-        this.confidenceSlider.addEventListener('input', this.updateConfidenceValue.bind(this));
-        this.iouSlider.addEventListener('input', this.updateIouValue.bind(this));
         
         // 按钮事件
         this.uploadBtn.addEventListener('click', this.uploadVideo.bind(this));
@@ -123,9 +118,6 @@ class FallDetectionApp {
         // 显示视频预览
         this.showVideoPreview(file);
         
-        // 显示检测参数
-        this.detectionParams.style.display = 'block';
-        
         // 启用上传按钮
         this.uploadBtn.disabled = false;
         
@@ -138,26 +130,84 @@ class FallDetectionApp {
         this.videoFileName.textContent = file.name;
         this.videoSize.textContent = this.formatFileSize(file.size);
         
+        // 清理之前的URL（如果存在）
+        if (this.currentVideoURL) {
+            URL.revokeObjectURL(this.currentVideoURL);
+        }
+        
         // 创建视频预览
-        const videoURL = URL.createObjectURL(file);
-        this.previewVideo.src = videoURL;
+        this.currentVideoURL = URL.createObjectURL(file);
+        this.previewVideo.src = this.currentVideoURL;
         
-        // 显示预览区域
+        // 隐藏上传区域，显示预览区域（替换效果）
+        this.uploadArea.style.display = 'none';
         this.videoPreview.style.display = 'block';
+    }
+
+    // 重置视频预览
+    resetVideoPreview() {
+        // 清理blob URLs
+        if (this.currentVideoURL) {
+            URL.revokeObjectURL(this.currentVideoURL);
+            this.currentVideoURL = null;
+        }
+        if (this.currentResultVideoURL) {
+            URL.revokeObjectURL(this.currentResultVideoURL);
+            this.currentResultVideoURL = null;
+        }
         
-        // 清理旧的URL
-        this.previewVideo.addEventListener('loadeddata', () => {
-            URL.revokeObjectURL(videoURL);
-        });
-    }
-
-    // 滑块值更新
-    updateConfidenceValue() {
-        this.confidenceValue.textContent = this.confidenceSlider.value;
-    }
-
-    updateIouValue() {
-        this.iouValue.textContent = this.iouSlider.value;
+        // 重置显示状态
+        this.uploadArea.style.display = 'block';
+        this.videoPreview.style.display = 'none';
+        
+        // 清理视频元素
+        this.previewVideo.src = '';
+        if (this.resultVideo) {
+            this.resultVideo.src = '';
+        }
+        
+        // 重置按钮状态
+        this.uploadBtn.style.display = 'block';
+        this.uploadBtn.disabled = true;
+        this.detectBtn.style.display = 'none';
+        this.detectBtn.disabled = true;
+        
+        // 隐藏结果区域
+        this.quickResults.style.display = 'none';
+        if (this.resultVideoContainer) {
+            this.resultVideoContainer.style.display = 'none';
+        }
+        this.progressSection.style.display = 'none';
+        this.statusSection.style.display = 'block';
+        
+        // 清理错误提示和加载提示
+        if (this.resultVideoContainer) {
+            const errorAlert = this.resultVideoContainer.querySelector('.alert-warning');
+            if (errorAlert) {
+                errorAlert.remove();
+            }
+        }
+        const loadingElement = document.getElementById('video-loading');
+        if (loadingElement) {
+            loadingElement.remove();
+        }
+        
+        // 清除结果区域的提示信息和AI建议
+        if (this.quickResults) {
+            const infoAlert = this.quickResults.querySelector('.alert-info');
+            if (infoAlert) {
+                infoAlert.remove();
+            }
+            const aiRecommendations = this.quickResults.querySelector('.ai-recommendations');
+            if (aiRecommendations) {
+                aiRecommendations.remove();
+            }
+        }
+        
+        // 清除文件选择
+        this.fileInput.value = '';
+        this.selectedFile = null;
+        this.currentTaskId = null;
     }
 
     // 上传视频
@@ -226,8 +276,8 @@ class FallDetectionApp {
 
         try {
             const params = {
-                confidence: parseFloat(this.confidenceSlider.value),
-                iou_threshold: parseFloat(this.iouSlider.value)
+                confidence: parseFloat(document.getElementById('detectionConf').value),
+                iou_threshold: parseFloat(document.getElementById('iouThreshold').value)
             };
 
             const response = await fetch(`/detect/${this.currentTaskId}`, {
@@ -351,8 +401,120 @@ class FallDetectionApp {
         const avgConf = analysis.confidence_analysis?.average || 0;
         this.confidence.textContent = Math.round(avgConf * 100) + '%';
         
+        // 隐藏视频预览容器，避免播放问题
+        if (this.resultVideoContainer) {
+            this.resultVideoContainer.style.display = 'none';
+        }
+        
         // 显示结果区域
         this.quickResults.style.display = 'block';
+        
+        // 显示AI智能建议
+        this.showAIRecommendations(result, analysis);
+    }
+    
+    // 显示AI智能建议
+    showAIRecommendations(result, analysis) {
+        // 清除之前的建议显示
+        const existingAI = this.quickResults.querySelector('.ai-recommendations');
+        if (existingAI) {
+            existingAI.remove();
+        }
+        
+        // 创建AI建议容器
+        const aiContainer = document.createElement('div');
+        aiContainer.className = 'ai-recommendations mt-4';
+        
+        let aiContent = '';
+        
+        // 显示LLM分析（如果有）
+        if (result.llm_analysis) {
+            aiContent += `
+                <div class="ai-analysis-card mb-3">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white py-2">
+                            <h6 class="mb-0">
+                                <i class="fas fa-robot me-2"></i>AI智能分析
+                            </h6>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="ai-analysis-text">
+                                ${this.formatAIText(result.llm_analysis)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 显示关怀建议
+        if (analysis.recommendations && analysis.recommendations.length > 0) {
+            const recommendations = analysis.recommendations.slice(0, 5); // 限制显示前5条
+            aiContent += `
+                <div class="recommendations-card">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white py-2">
+                            <h6 class="mb-0">
+                                <i class="fas fa-heart me-2"></i>关怀建议
+                            </h6>
+                        </div>
+                        <div class="card-body p-3">
+                            <ul class="list-unstyled mb-0">
+                                ${recommendations.map(rec => `
+                                    <li class="mb-2">
+                                        <small class="text-dark">${rec}</small>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                            ${analysis.recommendations.length > 5 ? 
+                                '<small class="text-muted">查看详细分析获得更多建议...</small>' : 
+                                ''
+                            }
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 如果没有AI分析，显示基本提示
+        if (!result.llm_analysis && (!analysis.recommendations || analysis.recommendations.length === 0)) {
+            aiContent = `
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    检测完成！您可以下载处理后的视频文件查看详细结果，或点击"查看详细分析"获取更多信息。
+                </div>
+            `;
+        }
+        
+        aiContainer.innerHTML = aiContent;
+        this.quickResults.appendChild(aiContainer);
+    }
+    
+    // 格式化AI文本显示
+    formatAIText(text) {
+        if (!text) return '';
+        
+        // 将文本按行分割并格式化
+        return text
+            .split('\n')
+            .map(line => {
+                line = line.trim();
+                if (!line) return '';
+                
+                // 检测标题行（包含：的行）
+                if (line.includes('：') && line.length < 50) {
+                    return `<div class="fw-bold text-primary mt-2 mb-1">${line}</div>`;
+                }
+                // 检测列表项（以•、-、或数字开头）
+                else if (line.match(/^[•\-\d\.]/)) {
+                    return `<div class="ms-3 mb-1">${line}</div>`;
+                }
+                // 普通文本
+                else {
+                    return `<div class="mb-1">${line}</div>`;
+                }
+            })
+            .join('');
     }
 
     // 查看详细结果
@@ -373,10 +535,10 @@ class FallDetectionApp {
     async loadTaskHistory() {
         try {
             const response = await fetch('/api/tasks');
-            const tasks = await response.json();
+            const data = await response.json();
 
-            if (response.ok && tasks.length > 0) {
-                this.renderTaskHistory(tasks);
+            if (response.ok && data.success && data.tasks && data.tasks.length > 0) {
+                this.renderTaskHistory(data.tasks);
             } else {
                 this.taskHistory.innerHTML = `
                     <div class="text-center py-3">
@@ -387,6 +549,12 @@ class FallDetectionApp {
             }
         } catch (error) {
             console.error('加载历史记录失败:', error);
+            this.taskHistory.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    <span class="text-muted">加载历史记录失败</span>
+                </div>
+            `;
         }
     }
 
@@ -603,4 +771,14 @@ document.addEventListener('DOMContentLoaded', function() {
             app.loadTaskHistory();
         }
     }, 30000); // 每30秒刷新一次
+});
+
+// 页面卸载时清理资源
+window.addEventListener('beforeunload', function() {
+    if (app) {
+        if (app.currentVideoURL) {
+            URL.revokeObjectURL(app.currentVideoURL);
+        }
+        // currentResultVideoURL相关处理已移除
+    }
 });
