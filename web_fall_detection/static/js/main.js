@@ -431,14 +431,16 @@ class FallDetectionApp {
         if (result.llm_analysis) {
             aiContent += `
                 <div class="ai-analysis-card mb-3">
-                    <div class="card border-primary">
-                        <div class="card-header bg-primary text-white py-2">
-                            <h6 class="mb-0">
-                                <i class="fas fa-robot me-2"></i>AI智能分析
-                            </h6>
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-gradient-primary text-white py-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-brain me-2"></i>
+                                <span class="fw-bold">AI智能分析</span>
+                                <span class="badge bg-light text-primary ms-auto">深度解读</span>
+                            </div>
                         </div>
                         <div class="card-body p-3">
-                            <div class="ai-analysis-text">
+                            <div class="ai-analysis-text compact">
                                 ${this.formatAIText(result.llm_analysis)}
                             </div>
                         </div>
@@ -449,25 +451,28 @@ class FallDetectionApp {
         
         // 显示关怀建议
         if (analysis.recommendations && analysis.recommendations.length > 0) {
-            const recommendations = analysis.recommendations.slice(0, 5); // 限制显示前5条
+            const recommendations = analysis.recommendations.slice(0, 4); // 限制显示前4条
             aiContent += `
                 <div class="recommendations-card">
-                    <div class="card border-success">
-                        <div class="card-header bg-success text-white py-2">
-                            <h6 class="mb-0">
-                                <i class="fas fa-heart me-2"></i>关怀建议
-                            </h6>
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-gradient-success text-white py-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                <span class="fw-bold">安全建议</span>
+                                <span class="badge bg-light text-success ms-auto">${recommendations.length}条</span>
+                            </div>
                         </div>
                         <div class="card-body p-3">
-                            <ul class="list-unstyled mb-0">
-                                ${recommendations.map(rec => `
-                                    <li class="mb-2">
-                                        <small class="text-dark">${rec}</small>
-                                    </li>
+                            <div class="recommendations-grid">
+                                ${recommendations.map((rec, index) => `
+                                    <div class="recommendation-compact">
+                                        <span class="rec-number">${index + 1}</span>
+                                        <span class="rec-text">${rec}</span>
+                                    </div>
                                 `).join('')}
-                            </ul>
-                            ${analysis.recommendations.length > 5 ? 
-                                '<small class="text-muted">查看详细分析获得更多建议...</small>' : 
+                            </div>
+                            ${analysis.recommendations.length > 4 ? 
+                                '<div class="text-center mt-2"><small class="text-muted">查看详细分析获得更多建议...</small></div>' : 
                                 ''
                             }
                         </div>
@@ -495,26 +500,46 @@ class FallDetectionApp {
         if (!text) return '';
         
         // 将文本按行分割并格式化
-        return text
-            .split('\n')
-            .map(line => {
-                line = line.trim();
-                if (!line) return '';
-                
-                // 检测标题行（包含：的行）
-                if (line.includes('：') && line.length < 50) {
-                    return `<div class="fw-bold text-primary mt-2 mb-1">${line}</div>`;
+        const lines = text.split('\n').filter(line => line.trim());
+        let formattedContent = '';
+        let currentSection = '';
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            // 检测章节标题（包含：的行且较短）
+            if (line.includes('：') && line.length < 60) {
+                // 结束上一个章节
+                if (currentSection) {
+                    formattedContent += '</div>';
                 }
-                // 检测列表项（以•、-、或数字开头）
-                else if (line.match(/^[•\-\d\.]/)) {
-                    return `<div class="ms-3 mb-1">${line}</div>`;
-                }
-                // 普通文本
-                else {
-                    return `<div class="mb-1">${line}</div>`;
-                }
-            })
-            .join('');
+                // 开始新章节
+                formattedContent += `
+                    <div class="ai-section">
+                        <h6 class="ai-section-title">
+                            <i class="fas fa-chevron-right me-1"></i>${line}
+                        </h6>
+                        <div class="ai-section-content">
+                `;
+                currentSection = 'open';
+            }
+            // 检测列表项
+            else if (line.match(/^[•\-\d\.]/) || line.startsWith('- ')) {
+                formattedContent += `<div class="ai-list-item">${line.replace(/^[•\-]\s*/, '')}</div>`;
+            }
+            // 普通文本
+            else {
+                formattedContent += `<div class="ai-text-item">${line}</div>`;
+            }
+        }
+        
+        // 关闭最后一个章节
+        if (currentSection) {
+            formattedContent += '</div></div>';
+        }
+        
+        return formattedContent || `<div class="ai-text-item">${text}</div>`;
     }
 
     // 查看详细结果
@@ -525,9 +550,79 @@ class FallDetectionApp {
     }
 
     // 下载结果
-    downloadResult() {
-        if (this.currentTaskId) {
-            window.location.href = `/download/${this.currentTaskId}`;
+    async downloadResult() {
+        if (!this.currentTaskId) {
+            this.showMessage('没有可下载的结果', 'warning');
+            return;
+        }
+
+        try {
+            this.showMessage('开始下载...', 'info');
+            
+            // 获取文件
+            const response = await fetch(`/download/${this.currentTaskId}`);
+            
+            if (!response.ok) {
+                throw new Error(`下载失败: ${response.status} ${response.statusText}`);
+            }
+            
+            // 获取文件名
+            const contentDisposition = response.headers.get('content-disposition');
+            let filename = 'detection_result.mp4';
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (filenameMatch && filenameMatch[1]) {
+                    filename = filenameMatch[1].replace(/['"]/g, '');
+                }
+            }
+            
+            // 获取文件blob
+            const blob = await response.blob();
+            
+            // 检查浏览器是否支持showSaveFilePicker API
+            if (window.showSaveFilePicker) {
+                try {
+                    // 使用现代文件系统API让用户选择保存位置
+                    const fileHandle = await window.showSaveFilePicker({
+                        suggestedName: filename,
+                        types: [{
+                            description: '视频文件',
+                            accept: {
+                                'video/mp4': ['.mp4']
+                            }
+                        }]
+                    });
+                    
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    
+                    this.showMessage('文件下载成功！', 'success');
+                    
+                } catch (saveError) {
+                    if (saveError.name === 'AbortError') {
+                        this.showMessage('下载已取消', 'info');
+                        return;
+                    }
+                    throw saveError;
+                }
+            } else {
+                // 降级到传统下载方式
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                this.showMessage('文件下载已开始，请查看浏览器下载文件夹', 'success');
+            }
+            
+        } catch (error) {
+            console.error('下载错误:', error);
+            this.showMessage(`下载失败: ${error.message}`, 'error');
         }
     }
 

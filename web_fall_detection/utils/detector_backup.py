@@ -20,6 +20,27 @@ class FallDetector:
                  pose_model_path='../models/yolov8n-pose.pt',
                  llm_model_path='../models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf',
                  use_gpu=True, skip_frames=5):
+        """在帧中检测并绘制姿态关键点，模仿main.py的方式"""
+        try:
+            pose_results = self.pose_model.predict(
+                source=frame, 
+                conf=0.25,
+                device=self.device,
+                verbose=False  # 减少输出噪音
+            )[0]
+            
+            # 绘制姿态关键点（绿色圆点）
+            if pose_results.keypoints is not None and len(pose_results.keypoints) > 0:
+                for kpts in pose_results.keypoints.xy:
+                    if kpts is not None and len(kpts) > 0:
+                        for x, y in kpts:
+                            if x > 0 and y > 0:  # 只绘制有效关键点
+                                cv2.circle(frame, (int(x), int(y)), 2, (0, 255, 0), -1)
+        except Exception as e:
+            print(f"姿态检测错误: {str(e)}")
+            # 继续处理，不中断视频处理
+            pass           llm_model_path='../models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf',
+                 use_gpu=True, skip_frames=5):
         """
         初始化跌倒检测器
         

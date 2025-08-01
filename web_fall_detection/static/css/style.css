@@ -471,6 +471,335 @@ body {
     to { transform: rotate(360deg); }
 }
 
+/* Hero区域样式优化 */
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.1);
+    z-index: 1;
+}
+
+.hero-section * {
+    position: relative;
+    z-index: 2;
+}
+
+.hero-section .text-primary {
+    color: white !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.hero-section .text-muted {
+    color: rgba(255, 255, 255, 0.9) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.hero-section .feature-badges .badge {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    text-shadow: none;
+}
+
+/* 结果页面布局对齐优化 */
+.col-lg-4.d-flex.flex-column {
+    min-height: 100%;
+}
+
+/* 安全建议文本样式 */
+.recommendations-text.scrollable-content {
+    max-height: 120px;
+}
+
+.safety-advice-text {
+    font-size: 0.8rem;
+    color: #495057;
+    line-height: 1.5;
+    padding: 0.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 6px;
+    border-left: 3px solid #28a745;
+}
+
+/* 事件详情固定高度 */
+.timeline-events-compact.scrollable-content.fixed-height {
+    max-height: 140px;
+    min-height: 140px;
+}
+
+/* 可滚动内容区域 */
+.scrollable-content {
+    max-height: 180px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+}
+
+/* 滚动条样式 */
+.scrollable-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.scrollable-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.2);
+    border-radius: 2px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0,0,0,0.4);
+}
+
+/* AI分析滚动区域特殊样式 */
+.ai-analysis-compact .scrollable-content {
+    max-height: 200px;
+}
+
+/* 建议列表滚动区域 */
+.recommendations-compact.scrollable-content {
+    max-height: 220px;
+}
+
+/* 事件详情滚动区域 */
+.timeline-events-compact.scrollable-content {
+    max-height: 300px;
+}
+
+/* 确保右侧栏高度对齐 */
+@media (min-width: 992px) {
+    .row.h-100.align-items-stretch {
+        min-height: calc(100vh - 180px);
+    }
+    
+    .col-lg-4.d-flex.flex-column,
+    .col-lg-8.d-flex.flex-column {
+        height: 100%;
+    }
+    
+    .col-lg-4.d-flex.flex-column {
+        overflow: hidden;
+        max-height: calc(100vh - 180px);
+    }
+    
+    .ai-analysis-compact .scrollable-content {
+        max-height: 150px;
+    }
+    
+    .recommendations-text.scrollable-content {
+        max-height: 400px;
+    }
+    
+    .timeline-events-compact.scrollable-content.fixed-height {
+        max-height: 1000px;
+        min-height: 160px;
+    }
+    
+    /* 左侧栏最后一个元素撑满剩余空间 */
+    .col-lg-8 .card:last-child {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .col-lg-8 .card:last-child .card-body {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+/* 结果页面LLM建议紧凑布局 */
+.ai-analysis-compact {
+    font-size: 0.8rem;
+    line-height: 1.3;
+}
+
+.ai-text-formatted {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+    color: #495057;
+    margin: 0;
+    padding: 0.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 6px;
+    border-left: 3px solid #007bff;
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+/* LLM文本格式化样式 */
+.llm-section-title {
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0.5rem 0 0.3rem 0;
+    padding: 0.2rem 0.4rem;
+    background: linear-gradient(90deg, #e3f2fd 0%, transparent 100%);
+    border-left: 3px solid #2196f3;
+    border-radius: 0 4px 4px 0;
+    font-size: 0.75rem;
+}
+
+.llm-list-item {
+    font-size: 0.7rem;
+    color: #6c757d;
+    margin: 0.2rem 0;
+    padding-left: 0.75rem;
+    position: relative;
+    line-height: 1.3;
+}
+
+.llm-list-item:before {
+    content: "▸";
+    color: #007bff;
+    position: absolute;
+    left: 0.25rem;
+    font-size: 0.65rem;
+}
+
+.llm-text-line {
+    font-size: 0.7rem;
+    color: #495057;
+    margin: 0.2rem 0;
+    line-height: 1.3;
+}
+
+.recommendations-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.recommendation-item-compact {
+    background: linear-gradient(90deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    border-left: 3px solid #28a745;
+    transition: all 0.2s ease;
+}
+
+.recommendation-item-compact:hover {
+    background: linear-gradient(90deg, #e9ecef 0%, #f8f9fa 100%);
+    transform: translateX(2px);
+}
+
+.rec-number-small {
+    flex-shrink: 0;
+    width: 1.2rem;
+    height: 1.2rem;
+    background: #28a745;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-right: 0.5rem;
+}
+
+.rec-text-small {
+    font-size: 0.75rem;
+    color: #495057;
+    line-height: 1.3;
+    flex: 1;
+}
+
+/* 结果页面卡片头部优化 */
+.col-lg-4 .card-header {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
+}
+
+.col-lg-4 .card-body {
+    padding: 0.75rem;
+}
+
+/* 渐变背景增强 */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
+}
+
+/* 事件详情紧凑布局 */
+.timeline-events-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.event-item-compact {
+    background: linear-gradient(90deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 6px;
+    padding: 0.5rem;
+    border-left: 3px solid #17a2b8;
+    transition: all 0.2s ease;
+}
+
+.event-item-compact:hover {
+    background: linear-gradient(90deg, #e9ecef 0%, #f8f9fa 100%);
+    transform: translateX(2px);
+}
+
+.event-desc {
+    font-size: 0.75rem;
+    color: #495057;
+    font-weight: 500;
+    margin-bottom: 0.2rem;
+    line-height: 1.3;
+}
+
+.event-time {
+    font-size: 0.65rem;
+    color: #6c757d;
+}
+
+.confidence-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.confidence-badge.high {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.confidence-badge.medium {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.confidence-badge.low {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
 /* AI建议样式 */
 .ai-recommendations {
     animation: fadeInUp 0.5s ease-out;
@@ -478,46 +807,126 @@ body {
 
 .ai-analysis-card .card-header,
 .recommendations-card .card-header {
-    font-size: 0.9rem;
-    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
 }
 
-.ai-analysis-text {
-    font-size: 0.9rem;
-    line-height: 1.5;
+/* 紧凑模式AI分析文本 */
+.ai-analysis-text.compact {
+    font-size: 0.8rem;
+    line-height: 1.4;
     color: #495057;
 }
 
-.ai-analysis-text .fw-bold {
-    font-size: 0.95rem;
-    margin-top: 0.75rem;
-    margin-bottom: 0.5rem;
+/* AI章节样式 */
+.ai-section {
+    margin-bottom: 0.75rem;
+}
+
+.ai-section:last-child {
+    margin-bottom: 0;
+}
+
+.ai-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.4rem;
+    padding: 0.3rem 0.5rem;
+    background: linear-gradient(90deg, #f8f9fa 0%, transparent 100%);
     border-left: 3px solid var(--primary-color);
+    border-radius: 0 4px 4px 0;
+}
+
+.ai-section-title i {
+    font-size: 0.7rem;
+    transition: transform 0.2s ease;
+}
+
+.ai-section:hover .ai-section-title i {
+    transform: rotate(90deg);
+}
+
+.ai-section-content {
     padding-left: 0.75rem;
 }
 
-.ai-analysis-text .ms-3 {
-    font-size: 0.85rem;
+.ai-list-item {
+    font-size: 0.75rem;
     color: #6c757d;
-    padding-left: 1rem;
+    margin-bottom: 0.25rem;
+    padding-left: 0.75rem;
     position: relative;
 }
 
-.ai-analysis-text .ms-3:before {
-    content: "•";
+.ai-list-item:before {
+    content: "▸";
     color: var(--primary-color);
     position: absolute;
-    left: 0.5rem;
+    left: 0.25rem;
+    font-size: 0.7rem;
 }
 
-.recommendations-card ul li {
-    font-size: 0.85rem;
-    padding: 0.25rem 0;
-    border-bottom: 1px solid #f8f9fa;
+.ai-text-item {
+    font-size: 0.75rem;
+    color: #495057;
+    margin-bottom: 0.25rem;
 }
 
-.recommendations-card ul li:last-child {
-    border-bottom: none;
+/* 建议网格布局 */
+.recommendations-grid {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.recommendation-compact {
+    display: flex;
+    align-items: flex-start;
+    padding: 0.4rem 0.6rem;
+    background: linear-gradient(90deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 6px;
+    border-left: 3px solid #28a745;
+    transition: all 0.2s ease;
+}
+
+.recommendation-compact:hover {
+    background: linear-gradient(90deg, #e9ecef 0%, #f8f9fa 100%);
+    transform: translateX(2px);
+}
+
+.rec-number {
+    flex-shrink: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: #28a745;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-right: 0.6rem;
+}
+
+.rec-text {
+    font-size: 0.8rem;
+    color: #495057;
+    line-height: 1.3;
+    flex: 1;
+}
+
+/* 渐变背景 */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
 }
 
 @keyframes fadeInUp {
@@ -531,6 +940,40 @@ body {
     }
 }
 
+/* 响应式优化 */
+@media (max-width: 768px) {
+    .ai-section-title {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.4rem;
+    }
+    
+    .ai-list-item,
+    .ai-text-item {
+        font-size: 0.7rem;
+    }
+    
+    .rec-text {
+        font-size: 0.75rem;
+    }
+    
+    .ai-analysis-card .card-header,
+    .recommendations-card .card-header {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
+    
+    .recommendation-compact {
+        padding: 0.3rem 0.5rem;
+    }
+    
+    .rec-number {
+        width: 1.3rem;
+        height: 1.3rem;
+        font-size: 0.65rem;
+        margin-right: 0.5rem;
+    }
+}
+
 /* 打印样式 */
 @media print {
     .navbar, .btn, .card-header .btn-group {
@@ -540,6 +983,8 @@ body {
     .card {
         break-inside: avoid;
         margin-bottom: 1rem;
+        box-shadow: none !important;
+        border: 1px solid #dee2e6 !important;
     }
     
     body {
@@ -548,5 +993,17 @@ body {
     
     .ai-recommendations {
         break-inside: avoid;
+    }
+    
+    .bg-gradient-primary,
+    .bg-gradient-success,
+    .bg-gradient-info {
+        background: #6c757d !important;
+        color: white !important;
+    }
+    
+    .recommendation-compact {
+        background: #f8f9fa !important;
+        border: 1px solid #dee2e6 !important;
     }
 }

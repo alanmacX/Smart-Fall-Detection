@@ -36,9 +36,9 @@ app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
 # 性能配置
 PERFORMANCE_CONFIG = {
     'use_gpu': True,       # 是否使用GPU加速
-    'skip_frames': 3,      # 跳帧间隔（1=每帧检测，3=每3帧检测）
-    'detection_conf': 0.5, # 检测置信度阈值
-    'iou_threshold': 0.4   # IOU阈值
+    'skip_frames': 5,      # 跳帧间隔（1=每帧检测，3=每3帧检测）
+    'detection_conf': 0.6, # 检测置信度阈值
+    'iou_threshold': 0.3   # IOU阈值
 }
 
 # 全局任务存储
@@ -55,6 +55,32 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 print(f"📁 上传目录: {UPLOAD_FOLDER}")
 print(f"📁 输出目录: {OUTPUT_FOLDER}")
+
+@app.template_filter('format_llm_text')
+def format_llm_text(text):
+    """格式化LLM分析文本为HTML"""
+    if not text:
+        return ''
+    
+    lines = text.split('\n')
+    formatted_lines = []
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+            
+        # 检测章节标题（包含：且较短）
+        if '：' in line and len(line) < 60:
+            formatted_lines.append(f'<div class="llm-section-title">{line}</div>')
+        # 检测列表项
+        elif line.startswith(('•', '-', '1.', '2.', '3.', '4.', '5.')):
+            formatted_lines.append(f'<div class="llm-list-item">{line}</div>')
+        # 普通文本
+        else:
+            formatted_lines.append(f'<div class="llm-text-line">{line}</div>')
+    
+    return '\n'.join(formatted_lines)
 
 class TaskStatus:
     PENDING = "pending"
@@ -227,12 +253,24 @@ def download_result(task_id):
         return jsonify({'error': '输出视频文件不存在'}), 404
     
     try:
-        return send_file(
+        # 生成下载文件名
+        original_filename = task.get('filename', 'video.mp4')
+        name_without_ext = os.path.splitext(original_filename)[0]
+        download_filename = f"fall_detection_{name_without_ext}.mp4"
+        
+        response = send_file(
             output_path, 
-            as_attachment=False,  # 改为False以支持在线预览
-            download_name=f"detection_result_{task['filename']}",
-            mimetype='video/mp4'  # 明确指定MIME类型
+            as_attachment=True,  # 设置为True以触发下载
+            download_name=download_filename,
+            mimetype='video/mp4'
         )
+        
+        # 设置额外的响应头
+        response.headers['Content-Disposition'] = f'attachment; filename="{download_filename}"'
+        response.headers['Cache-Control'] = 'no-cache'
+        
+        return response
+        
     except Exception as e:
         print(f"发送文件失败: {str(e)}")
         return jsonify({'error': f'文件发送失败: {str(e)}'}), 500

@@ -98,9 +98,9 @@
                 </div>
             </div>
 
-            <div class="row">
+            <div class="row h-100 align-items-stretch">
                 <!-- 左侧 - 图表分析 -->
-                <div class="col-lg-8">
+                <div class="col-lg-8 d-flex flex-column">
                     <!-- 事件时间线 -->
                     {% if result.analysis.timeline %}
                     <div class="card mb-4 shadow-sm">
@@ -169,63 +169,68 @@
                 </div>
 
                 <!-- 右侧 - 智能分析与建议 -->
-                <div class="col-lg-4">
+                <div class="col-lg-4 d-flex flex-column">
                     <!-- LLM智能分析 -->
                     {% if result.llm_analysis %}
-                    <div class="card mb-4 shadow-sm">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-robot me-2"></i>
-                                AI智能分析
-                            </h5>
+                    <div class="card mb-3 shadow-sm border-0 flex-shrink-0">
+                        <div class="card-header bg-gradient-primary text-white py-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-brain me-2"></i>
+                                <span class="fw-bold fs-6">AI智能分析</span>
+                                <span class="badge bg-light text-primary ms-auto small">深度解读</span>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div class="ai-analysis">
-                                <pre class="ai-text">{{ result.llm_analysis }}</pre>
+                        <div class="card-body p-2">
+                            <div class="ai-analysis-compact scrollable-content">
+                                <div class="ai-text-formatted">{{ result.llm_analysis | format_llm_text | safe }}</div>
                             </div>
                         </div>
                     </div>
                     {% endif %}
 
                     <!-- 关怀建议 -->
-                    <div class="card mb-4 shadow-sm">
-                        <div class="card-header bg-success text-white">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-heart me-2"></i>
-                                关怀建议
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            {% for recommendation in result.analysis.recommendations %}
-                            <div class="recommendation-item">
-                                <p class="mb-2">{{ recommendation }}</p>
+                    <div class="card mb-3 shadow-sm border-0 flex-shrink-0">
+                        <div class="card-header bg-gradient-success text-white py-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                <span class="fw-bold fs-6">安全建议</span>
+                                <span class="badge bg-light text-success ms-auto small">{{ result.analysis.recommendations|length }}条</span>
                             </div>
-                            {% endfor %}
+                        </div>
+                        <div class="card-body p-2">
+                            <div class="recommendations-text scrollable-content">
+                                <div class="safety-advice-text">
+                                    {% for recommendation in result.analysis.recommendations %}
+                                        {% if loop.index > 1 %} {% endif %}{{ recommendation }}{% if not loop.last %}；{% else %}。{% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- 事件详情 -->
                     {% if result.analysis.timeline %}
-                    <div class="card mb-4 shadow-sm">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-list me-2"></i>
-                                事件详情
-                            </h5>
+                    <div class="card mb-3 shadow-sm border-0 flex-shrink-0">
+                        <div class="card-header bg-gradient-info text-white py-2 flex-shrink-0">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-clock me-2"></i>
+                                <span class="fw-bold fs-6">事件详情</span>
+                                <span class="badge bg-light text-info ms-auto small">{{ result.analysis.timeline|length }}个</span>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div class="timeline-events">
+                        <div class="card-body p-2">
+                            <div class="timeline-events-compact scrollable-content fixed-height">
                                 {% for event in result.analysis.timeline %}
-                                <div class="event-item mb-3 p-3 border rounded">
+                                <div class="event-item-compact">
                                     <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <h6 class="mb-1">{{ event.description }}</h6>
-                                            <small class="text-muted">
+                                        <div class="flex-grow-1">
+                                            <div class="event-desc">{{ event.description }}</div>
+                                            <div class="event-time">
                                                 <i class="fas fa-clock me-1"></i>
                                                 {{ event.time }}
-                                            </small>
+                                            </div>
                                         </div>
-                                        <span class="badge bg-{% if event.type == 'sudden' %}danger{% else %}warning{% endif %}">
+                                        <span class="confidence-badge {% if event.confidence > 0.8 %}high{% elif event.confidence > 0.6 %}medium{% else %}low{% endif %}">
                                             {{ "%.0f"|format(event.confidence * 100) }}%
                                         </span>
                                     </div>
@@ -288,10 +293,100 @@
         const chartData = {{ result.analysis.chart_data | tojson }};
         const analysisData = {{ result.analysis | tojson }};
 
-        // 下载按钮事件
-        document.getElementById('downloadVideoBtn').addEventListener('click', function() {
-            window.location.href = `/download/${taskId}`;
+        // 下载按钮事件 - 使用现代下载方式
+        document.getElementById('downloadVideoBtn').addEventListener('click', async function() {
+            try {
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>下载中...';
+                
+                const response = await fetch(`/download/${taskId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`下载失败: ${response.status} ${response.statusText}`);
+                }
+                
+                // 获取文件名
+                const contentDisposition = response.headers.get('content-disposition');
+                let filename = 'fall_detection_result.mp4';
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                    if (filenameMatch && filenameMatch[1]) {
+                        filename = filenameMatch[1].replace(/['"]/g, '');
+                    }
+                }
+                
+                const blob = await response.blob();
+                
+                // 检查浏览器是否支持文件选择API
+                if (window.showSaveFilePicker) {
+                    try {
+                        const fileHandle = await window.showSaveFilePicker({
+                            suggestedName: filename,
+                            types: [{
+                                description: '跌倒检测视频',
+                                accept: {
+                                    'video/mp4': ['.mp4']
+                                }
+                            }]
+                        });
+                        
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                        
+                        // 显示成功消息
+                        showNotification('文件下载成功！', 'success');
+                        
+                    } catch (saveError) {
+                        if (saveError.name === 'AbortError') {
+                            showNotification('下载已取消', 'info');
+                            return;
+                        }
+                        throw saveError;
+                    }
+                } else {
+                    // 传统下载方式
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    showNotification('文件下载已开始，请查看浏览器下载文件夹', 'success');
+                }
+                
+            } catch (error) {
+                console.error('下载错误:', error);
+                showNotification(`下载失败: ${error.message}`, 'error');
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-download me-2"></i>下载视频';
+            }
         });
+
+        // 显示通知的函数
+        function showNotification(message, type = 'info') {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // 自动移除通知
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
 
         // 初始化图表
         document.addEventListener('DOMContentLoaded', function() {
