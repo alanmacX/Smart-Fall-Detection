@@ -1,10 +1,10 @@
 # 核心依赖 - Core Dependencies
-opencv-python>=4.8.0
-ultralytics>=8.0.0
-numpy>=1.24.0
+opencv-python==4.12.0.88
+ultralytics==8.3.170
+numpy==2.0.2
 
 # 大语言模型支持 - LLM Support
-llama-cpp-python>=0.2.0
+llama-cpp-python==0.3.14
 
 # GUI界面 - GUI Interface (for desktop version)
 tkinter
